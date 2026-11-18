@@ -196,6 +196,7 @@
     ['new_members', 'Nouveaux membres', 'sum'], ['members', 'Membres au total', 'last'], ['active', 'Membres actifs', 'last'],
     ['revenue_cents', 'Encaissé', 'sum', true], ['mrr_cents', 'Revenu mensuel (abonnements)', 'last', true], ['paying', 'Pros payants', 'last'],
     ['new_pros', 'Nouveaux pros', 'sum'], ['posts', 'Posts', 'sum'], ['checkins', 'Soirées certifiées', 'sum'], ['nights', 'Soirées sur la carte', 'sum'],
+    ['installs', 'Installations (notifications activées)', 'sum'], ['uninstalls', 'Désinstallations probables', 'sum'], ['deleted_accounts', 'Comptes supprimés', 'sum'],
   ];
   function label(d) {
     var x = new Date(d + 'T12:00:00');
@@ -225,7 +226,7 @@
   }
   async function evolution() {
     var rows = await rpc('admin_evolution', { p_period: period });
-    $('evoNote').textContent = PERIOD_TEXT[period] + '. Passe la souris (ou touche) une barre pour son chiffre. Membres actifs et revenu : suivis depuis le 18/11/2026.';
+    $('evoNote').textContent = PERIOD_TEXT[period] + '. Passe la souris (ou touche) une barre pour son chiffre. Membres actifs, revenu et désinstallations : suivis depuis le 18/11/2026. Désinstallations probables = téléphones qui ne reçoivent plus les notifications parce que l’app a été supprimée ; chiffres exacts dans App Store Connect et Google Play Console.';
     $('charts').innerHTML = rows && rows.length ? METRICS.map(function (m) { return chart(rows, m[0], m[1], m[2], m[3]); }).join('') : '<p class="muted">Pas de données.</p>';
   }
   $('periods').onclick = function (ev) {
