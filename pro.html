@@ -104,6 +104,7 @@
     var acc = (await sb.from('pro_accounts').select('kind, display_name, status, plan, plan_until, plan_offer, stripe_customer_id').eq('user_id', s.user.id).maybeSingle()).data;
     var box = $('offers');
     box.innerHTML = '';
+    $('portal').classList.add('hidden');
     if (!acc) { $('status').textContent = 'Pas encore de compte pro : demande-le dans l\'application (Profil, menu, Espace pro).'; return; }
     var active = acc.plan === 'promo' && acc.plan_until && new Date(acc.plan_until) > new Date();
     $('status').textContent = acc.display_name + ' · ' + (KINDS[acc.kind] || acc.kind)
@@ -132,7 +133,7 @@
     if (r.error) { $('loginMsg').textContent = 'E-mail ou mot de passe incorrect.'; return; }
     show();
   };
-  $('signout').onclick = async function () { await sb.auth.signOut(); show(); };
+  $('signout').onclick = async function () { await sb.auth.signOut(); $('banner').textContent = ''; history.replaceState(null, '', location.pathname); show(); };
   $('portal').onclick = function () { call({ portal: true }); };
   show();
 })();
