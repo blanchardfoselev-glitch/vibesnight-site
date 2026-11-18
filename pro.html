@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Espace pro · VIBES</title>
+<link rel="icon" href="/icon.png">
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #010105; color: #ccc; font: 15px/1.6 -apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  header img { width: 44px; height: 44px; border-radius: 10px; }
+  header a { color: #fff; font-weight: 800; font-size: 20px; letter-spacing: 3px; text-decoration: none; }
+  h1 { color: #fff; font-size: 26px; margin: 0 0 4px; }
+  h2 { color: #b388ff; font-size: 16px; margin: 28px 0 8px; }
+  a { color: #00e5ff; }
+  .muted { color: #666; font-size: 13px; }
+  nav { margin-top: 40px; padding-top: 16px; border-top: 1px solid #1a1a3e; display: flex; flex-wrap: wrap; gap: 16px; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+<header><img src="/icon.png" alt=""><a href="/">VIBES</a></header>
+<!-- vibesnight.app/pro.html (18/11/2026): pros sign in with their VIBES account and pay their offer by card (Stripe).
+     Built into web/pro.html by scripts/legal_site.mts. The publishable key below is public (same as in the app). -->
+<style>
+  .box { background: #0d0d20; border: 1px solid #1a1a3e; border-radius: 14px; padding: 18px; margin: 14px 0; }
+  .offer { border-color: #b388ff55; }
+  .offer h3 { color: #fff; margin: 0 0 4px; font-size: 17px; }
+  .price { color: #b388ff; font-weight: 800; font-size: 20px; margin: 4px 0 8px; }
+  input { width: 100%; box-sizing: border-box; background: #12122a; border: 1px solid #2a2a4e; border-radius: 10px; color: #fff; padding: 12px; font-size: 15px; margin: 6px 0; }
+  button { background: #b388ff; color: #08081a; border: 0; border-radius: 12px; padding: 12px 18px; font-weight: 800; font-size: 15px; cursor: pointer; margin-top: 8px; }
+  button.ghost { background: transparent; color: #b388ff; border: 1px solid #b388ff66; }
+  button:disabled { opacity: .5; cursor: default; }
+  .msg { margin: 10px 0; font-size: 14px; }
+  .ok { color: #69f0ae; } .err { color: #ff5252; }
+  .hidden { display: none; }
+</style>
+
+<h1>Espace pro</h1>
+<p>Clubs, bars, DJs, festivals et marques de soirée : connecte-toi avec ton compte VIBES pour choisir ton offre et la payer par carte.</p>
+<p id="banner" class="msg"></p>
+
+<div id="login" class="box">
+  <h2 style="margin-top:0">Connexion</h2>
+  <p class="muted">Le même e-mail et le même mot de passe que dans l'application VIBES.</p>
+  <input id="email" type="email" placeholder="E-mail" autocomplete="email">
+  <input id="password" type="password" placeholder="Mot de passe" autocomplete="current-password">
+  <button id="signin">Se connecter</button>
+  <p id="loginMsg" class="msg err"></p>
+</div>
+
+<div id="space" class="hidden">
+  <div class="box">
+    <p style="margin:0">Connecté : <strong id="who" style="color:#fff"></strong></p>
+    <p id="status" class="muted" style="margin:6px 0 0"></p>
+    <button id="portal" class="ghost hidden">Gérer mon abonnement (carte, factures, résiliation)</button>
+    <button id="signout" class="ghost">Se déconnecter</button>
+  </div>
+  <div id="offers"></div>
+  <p class="muted">Paiement sécurisé par Stripe. Facture envoyée par e-mail à chaque paiement. TVA non applicable, article 293 B du CGI. Abonnements sans engagement, résiliables à tout moment depuis « Gérer mon abonnement » : l'offre reste active jusqu'à la fin de la période payée.</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+(function () {
+  var URL_ = 'https://inrsrfrfvpzjykmshcor.supabase.co';
+  var KEY = 'sb_publishable_z-RVKohzcqo3hsrY0lTYZg_z43ryDnX';
+  var sb = window.supabase.createClient(URL_, KEY);
+  var KINDS = { club: 'Club', bar: 'Bar / afterwork', dj: 'DJ', organizer: 'Festival ou marque de soirée' };
+  var OFFERS = {
+    club: [{ id: 'club_monthly', title: 'Offre Club', price: '99,99 € / mois', text: 'Tout compris : ta page club, toutes tes soirées mises en avant sur la carte, la notification du soir aux membres à moins de 30 km, tes statistiques.' }],
+    bar: [
+      { id: 'bar_monthly', title: 'Offre Bar', price: '29,99 € / mois', text: 'Prix fondateur gardé à vie : ta page, tes soirées et afterworks publiés, 2 soirées par semaine mises en avant sur la carte et dans la notification du soir.' },
+      { id: 'bar_yearly', title: 'Offre Bar à l\'année', price: '299 € / an', text: 'La même offre, 2 mois offerts.' }],
+    dj: [{ id: 'dj_boost', title: 'Mise en avant DJ', price: '14,99 € / mois', text: 'Tes soirées en avant sur la carte et en haut des listes, et une place dans la notification du soir aux membres à moins de 30 km. Ton compte DJ reste gratuit.' }],
+    organizer: [
+      { id: 'brand_monthly', title: 'Marque de soirée', price: '99,99 € / mois', text: 'Pour les soirées qui tournent (type Afterlife, Keinemusik) : ta page, toutes tes dates mises en avant dans chaque ville, la notification du soir, tes statistiques.' },
+      { id: 'festival_edition', title: 'Festival', price: '49,99 € pour 2 mois', text: 'Avant ton festival : ta page, la mise en avant sur la carte et une place dans la notification du soir. Paiement unique.' }],
+  };
+  var $ = function (id) { return document.getElementById(id); };
+
+  var q = new URLSearchParams(location.search);
+  if (q.get('ok')) { $('banner').textContent = 'Paiement reçu, merci ! Ton offre s\'active dans l\'application d\'ici une minute.'; $('banner').className = 'msg ok'; }
+  if (q.get('annule')) { $('banner').textContent = 'Paiement annulé, rien n\'a été débité.'; $('banner').className = 'msg err'; }
+
+  async function call(body) {
+    var res = await sb.functions.invoke('pro-checkout', { body: body });
+    var data = res.data || {};
+    if (res.error && !data.error) {
+      try { data = await res.error.context.json(); } catch (e) { data = { error: 'Erreur, réessaie dans un instant.' }; }
+    }
+    if (data.url) { location.href = data.url; return; }
+    alert(data.error || 'Erreur, réessaie dans un instant.');
+  }
+
+  async function show() {
+    var s = (await sb.auth.getSession()).data.session;
+    $('login').classList.toggle('hidden', !!s);
+    $('space').classList.toggle('hidden', !s);
+    if (!s) return;
+    $('who').textContent = s.user.email;
+    var acc = (await sb.from('pro_accounts').select('kind, display_name, status, plan, plan_until, plan_offer, stripe_customer_id').maybeSingle()).data;
+    var box = $('offers');
+    box.innerHTML = '';
+    if (!acc) { $('status').textContent = 'Pas encore de compte pro : demande-le dans l\'application (Profil, menu, Espace pro).'; return; }
+    var active = acc.plan === 'promo' && acc.plan_until && new Date(acc.plan_until) > new Date();
+    $('status').textContent = acc.display_name + ' · ' + (KINDS[acc.kind] || acc.kind)
+      + (acc.status !== 'approved' ? ' · vérification en cours dans l\'application'
+        : active ? ' · offre active jusqu\'au ' + new Date(acc.plan_until).toLocaleDateString('fr-FR') : ' · aucune offre active');
+    $('portal').classList.toggle('hidden', !acc.stripe_customer_id);
+    if (acc.status !== 'approved') return;
+    (OFFERS[acc.kind] || []).forEach(function (o) {
+      var d = document.createElement('div');
+      d.className = 'box offer';
+      d.innerHTML = '<h3></h3><div class="price"></div><p class="muted" style="font-size:14px"></p><button>Choisir cette offre</button>';
+      d.querySelector('h3').textContent = o.title;
+      d.querySelector('.price').textContent = o.price;
+      d.querySelector('p').textContent = o.text;
+      var b = d.querySelector('button');
+      b.disabled = !!active;
+      if (active) b.textContent = acc.plan_offer === o.id ? 'Offre active' : 'Une offre est déjà active';
+      b.onclick = function () { b.disabled = true; b.textContent = 'Ouverture du paiement…'; call({ offer: o.id }).finally(function () { b.disabled = false; b.textContent = 'Choisir cette offre'; }); };
+      box.appendChild(d);
+    });
+  }
+
+  $('signin').onclick = async function () {
+    $('loginMsg').textContent = '';
+    var r = await sb.auth.signInWithPassword({ email: $('email').value.trim(), password: $('password').value });
+    if (r.error) { $('loginMsg').textContent = 'E-mail ou mot de passe incorrect.'; return; }
+    show();
+  };
+  $('signout').onclick = async function () { await sb.auth.signOut(); show(); };
+  $('portal').onclick = function () { call({ portal: true }); };
+  show();
+})();
+</script>
+
+<nav>
+  <a href="/cgu.html">Conditions d'utilisation</a>
+  <a href="/confidentialite.html">Confidentialité</a>
+  <a href="/suppression-compte.html">Supprimer mon compte</a>
+  <a href="mailto:contact@vibesnight.app">contact@vibesnight.app</a>
+</nav>
+</main>
+</body>
+</html>
