@@ -101,7 +101,7 @@
     $('space').classList.toggle('hidden', !s);
     if (!s) return;
     $('who').textContent = s.user.email;
-    var acc = (await sb.from('pro_accounts').select('kind, display_name, status, plan, plan_until, plan_offer, stripe_customer_id').maybeSingle()).data;
+    var acc = (await sb.from('pro_accounts').select('kind, display_name, status, plan, plan_until, plan_offer, stripe_customer_id').eq('user_id', s.user.id).maybeSingle()).data;
     var box = $('offers');
     box.innerHTML = '';
     if (!acc) { $('status').textContent = 'Pas encore de compte pro : demande-le dans l\'application (Profil, menu, Espace pro).'; return; }
