@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Console admin · VIBES</title>
+<link rel="icon" href="/icon.png">
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #010105; color: #ccc; font: 15px/1.6 -apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  header img { width: 44px; height: 44px; border-radius: 10px; }
+  header a { color: #fff; font-weight: 800; font-size: 20px; letter-spacing: 3px; text-decoration: none; }
+  h1 { color: #fff; font-size: 26px; margin: 0 0 4px; }
+  h2 { color: #b388ff; font-size: 16px; margin: 28px 0 8px; }
+  a { color: #00e5ff; }
+  .muted { color: #666; font-size: 13px; }
+  nav { margin-top: 40px; padding-top: 16px; border-top: 1px solid #1a1a3e; display: flex; flex-wrap: wrap; gap: 16px; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+<header><img src="/icon.png" alt=""><a href="/">VIBES</a></header>
+<!-- vibesnight.app/admin.html (18/11/2026): admin console. Only accounts listed in public.admins get data back:
+     every call goes through admin_* functions that check is_admin() in the database. Built by scripts/legal_site.mts. -->
+<meta name="robots" content="noindex, nofollow">
+<style>
+  main { max-width: 1180px !important; }
+  .box { background: #0d0d20; border: 1px solid #1a1a3e; border-radius: 14px; padding: 16px; margin: 12px 0; }
+  input, select { background: #12122a; border: 1px solid #2a2a4e; border-radius: 10px; color: #fff; padding: 10px 12px; font-size: 14px; }
+  input.wide { width: 100%; box-sizing: border-box; margin: 6px 0; }
+  button { background: #b388ff; color: #08081a; border: 0; border-radius: 10px; padding: 9px 14px; font-weight: 800; font-size: 13px; cursor: pointer; }
+  button.ghost { background: transparent; color: #b388ff; border: 1px solid #b388ff66; }
+  button.danger { background: transparent; color: #ff5252; border: 1px solid #ff525266; }
+  button.small { padding: 5px 9px; font-size: 12px; border-radius: 8px; }
+  button:disabled { opacity: .5; cursor: default; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 4px; }
+  .tabs button { background: #12122a; color: #aaa; border: 1px solid #2a2a4e; }
+  .tabs button.on { background: #b388ff; color: #08081a; border-color: #b388ff; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 10px 0; }
+  .bar input { flex: 1; min-width: 200px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+  .stat { background: #0d0d20; border: 1px solid #1a1a3e; border-radius: 12px; padding: 12px; }
+  .stat b { display: block; color: #fff; font-size: 24px; }
+  .stat span { color: #888; font-size: 12px; }
+  .stat.alert b { color: #ff5252; }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: #888; font-weight: 600; padding: 8px 6px; border-bottom: 1px solid #1a1a3e; white-space: nowrap; }
+  td { padding: 8px 6px; border-bottom: 1px solid #12122a; vertical-align: top; }
+  td .acts { display: flex; gap: 4px; flex-wrap: wrap; }
+  .pseudo { color: #fff; font-weight: 900; text-transform: uppercase; letter-spacing: .5px; }
+  .tag { display: inline-block; padding: 1px 7px; border-radius: 6px; font-size: 11px; font-weight: 700; background: #1a1a3e; color: #aaa; margin: 1px 2px 1px 0; }
+  .tag.ok { background: #69f0ae22; color: #69f0ae; } .tag.warn { background: #ffd74022; color: #ffd740; } .tag.bad { background: #ff525222; color: #ff5252; } .tag.vio { background: #b388ff22; color: #b388ff; }
+  .av { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; background: #1a1a3e; }
+  .msg { margin: 10px 0; font-size: 14px; } .err { color: #ff5252; } .ok { color: #69f0ae; }
+  .hidden { display: none; }
+</style>
+
+<h1>Console admin</h1>
+<p id="banner" class="msg"></p>
+
+<div id="login" class="box" style="max-width:420px">
+  <h2 style="margin-top:0">Connexion admin</h2>
+  <p class="muted">Ton compte VIBES admin (même e-mail et mot de passe que dans l'application).</p>
+  <input id="email" class="wide" type="email" placeholder="E-mail" autocomplete="email">
+  <input id="password" class="wide" type="password" placeholder="Mot de passe" autocomplete="current-password">
+  <button id="signin" style="margin-top:8px">Se connecter</button>
+  <p id="loginMsg" class="msg err"></p>
+</div>
+
+<div id="app" class="hidden">
+  <div class="bar">
+    <span class="muted">Connecté : <strong id="who" style="color:#fff"></strong></span>
+    <span style="flex:1"></span>
+    <button id="refresh" class="ghost small">Actualiser</button>
+    <button id="signout" class="ghost small">Se déconnecter</button>
+  </div>
+  <div class="tabs" id="tabs">
+    <button data-tab="overview" class="on">Vue d'ensemble</button>
+    <button data-tab="members">Membres</button>
+    <button data-tab="pros">Pros et paiements</button>
+    <button data-tab="events">Soirées</button>
+  </div>
+
+  <section id="tab-overview"><div class="grid" id="stats"></div>
+    <p class="muted" style="margin-top:14px">Les signalements, demandes pro et plantages se traitent aussi depuis l'application (Profil, menu, Admin), pour réagir depuis ton téléphone.</p>
+  </section>
+
+  <section id="tab-members" class="hidden">
+    <div class="bar">
+      <input id="mq" placeholder="Pseudo, nom ou e-mail">
+      <select id="mf"><option value="all">Tous</option><option value="new">Nouveaux (7 jours)</option><option value="pros">Avec compte pro</option><option value="suspended">Suspendus</option><option value="banned">Bannis</option></select>
+      <button id="mgo">Chercher</button>
+    </div>
+    <div class="scroll"><table id="mt"></table></div>
+    <div class="bar"><button id="mmore" class="ghost small hidden">Voir plus</button></div>
+  </section>
+
+  <section id="tab-pros" class="hidden">
+    <div class="bar">
+      <input id="pq" placeholder="Nom de la page, pseudo ou e-mail">
+      <select id="pf"><option value="all">Tous</option><option value="paying">Payants</option><option value="pending">En attente</option><option value="club">Clubs</option><option value="bar">Bars</option><option value="dj">DJs</option><option value="organizer">Festivals / marques</option></select>
+      <button id="pgo">Chercher</button>
+    </div>
+    <div class="scroll"><table id="pt"></table></div>
+  </section>
+
+  <section id="tab-events" class="hidden">
+    <div class="bar">
+      <input id="eq" placeholder="Soirée, club, ville ou DJ">
+      <select id="ef"><option value="upcoming">À venir sur la carte</option><option value="boosted">Mises en avant</option><option value="removed">Retirées de la carte</option></select>
+      <button id="ego">Chercher</button>
+    </div>
+    <div class="scroll"><table id="et"></table></div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+(function () {
+  var URL_ = 'https://inrsrfrfvpzjykmshcor.supabase.co';
+  var KEY = 'sb_publishable_z-RVKohzcqo3hsrY0lTYZg_z43ryDnX';
+  var STRIPE_TEST = true; // switch to false once Stripe is live
+  var sb = window.supabase.createClient(URL_, KEY);
+  var $ = function (id) { return document.getElementById(id); };
+  var KINDS = { club: 'Club', bar: 'Bar / afterwork', dj: 'DJ', organizer: 'Festival / marque' };
+  var OFFERS = { club_monthly: 'Club 99,99/mois', brand_monthly: 'Marque 99,99/mois', festival_edition: 'Festival 49,99', bar_monthly: 'Bar 29,99/mois', bar_yearly: 'Bar 299/an', dj_boost: 'DJ 14,99/mois' };
+  var GENRES = ['techno', 'house', 'melodic', 'trance', 'dnb', 'bass', 'hardcore', 'electro', 'generaliste'];
+  var memberPage = 0;
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function day(d) { return d ? new Date(d).toLocaleDateString('fr-FR') : '—'; }
+  function ago(d) {
+    if (!d) return 'jamais';
+    var h = (Date.now() - new Date(d)) / 3600000;
+    return h < 1 ? "à l'instant" : h < 24 ? 'il y a ' + Math.round(h) + ' h' : 'il y a ' + Math.round(h / 24) + ' j';
+  }
+  function tag(text, cls) { return '<span class="tag ' + (cls || '') + '">' + esc(text) + '</span>'; }
+  function say(text, ok) { $('banner').textContent = text; $('banner').className = 'msg ' + (ok ? 'ok' : 'err'); if (ok) setTimeout(function () { if ($('banner').textContent === text) $('banner').textContent = ''; }, 4000); }
+
+  async function rpc(name, args) {
+    var r = await sb.rpc(name, args || {});
+    if (r.error) { say('Erreur : ' + r.error.message); throw r.error; }
+    return r.data;
+  }
+  // An action button: confirm, run, then reload the list.
+  async function act(question, name, args, reload) {
+    if (question && !confirm(question)) return;
+    var ok = await rpc(name, args);
+    if (ok === false) { say("Action refusée (compte admin requis, ou c'est ton propre compte)."); return; }
+    say('Fait.', true);
+    reload();
+  }
+
+  // ---------- Overview ----------
+  async function overview() {
+    var o = await rpc('admin_overview');
+    if (!o) { say("Ce compte n'est pas admin."); return; }
+    var pros = o.pros || {};
+    var cards = [
+      ['Membres', o.members], ['Nouveaux aujourd\'hui', o.new_today], ['Nouveaux (7 j)', o.new_7d], ['Actifs (30 j)', o.active_30d],
+      ['Revenu mensuel', (o.mrr_cents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })],
+      ['Pros payants', o.paying], ['Offres offertes', o.gifted], ['Demandes pro en attente', o.pros_pending, o.pros_pending > 0],
+      ['Clubs', pros.club || 0], ['Bars', pros.bar || 0], ['DJs', pros.dj || 0], ['Festivals / marques', pros.organizer || 0],
+      ['Soirées sur la carte', o.nights_on_map], ['Soirées (7 j)', o.nights_7d], ['Posts (7 j)', o.posts_7d], ['Soirées certifiées (7 j)', o.checkins_7d],
+      ['Signalements ouverts', o.reports_open, o.reports_open > 0], ['Comptes suspects', o.flags_open, o.flags_open > 0],
+      ['Plantages (24 h)', o.crashes_24h, o.crashes_24h > 0], ['Suspendus', o.suspended], ['Bannis', o.banned],
+    ];
+    $('stats').innerHTML = cards.map(function (c) {
+      return '<div class="stat' + (c[2] ? ' alert' : '') + '"><b>' + esc(c[1]) + '</b><span>' + esc(c[0]) + '</span></div>';
+    }).join('');
+  }
+
+  // ---------- Members ----------
+  async function members(more) {
+    memberPage = more ? memberPage + 1 : 0;
+    var rows = await rpc('admin_members', { q: $('mq').value, filter: $('mf').value, lim: 50, off: memberPage * 50 });
+    var head = '<tr><th></th><th>Membre</th><th>E-mail</th><th>Inscrit</th><th>Dernière connexion</th><th>Posts</th><th>Abonnés</th><th>Soirées</th><th>État</th><th></th></tr>';
+    var html = rows.map(function (m) {
+      var state = (m.banned_at ? tag('Banni', 'bad') : m.suspended_at ? tag('Suspendu', 'warn') : m.paused ? tag('En pause', 'warn') : tag('Actif', 'ok'))
+        + (m.pro_kind ? tag((KINDS[m.pro_kind] || m.pro_kind) + (m.pro_status !== 'approved' ? ' (en attente)' : ''), 'vio') : '')
+        + (m.is_admin ? tag('Admin', 'vio') : '') + (m.reports > 0 ? tag(m.reports + ' signalement(s)', 'bad') : '');
+      var acts = [];
+      if (m.banned_at) acts.push('<button class="ghost small" data-a="unban">Débannir</button>');
+      else {
+        if (m.suspended_at) acts.push('<button class="ghost small" data-a="clear">Réactiver</button>');
+        else acts.push('<button class="ghost small" data-a="suspend">Suspendre</button>');
+        acts.push('<button class="danger small" data-a="ban">Bannir</button>');
+      }
+      if (m.avatar_url) acts.push('<button class="ghost small" data-a="photo">Retirer la photo</button>');
+      return '<tr data-id="' + esc(m.id) + '" data-name="' + esc(m.username || m.email) + '">'
+        + '<td>' + (m.avatar_url ? '<img class="av" src="' + esc(m.avatar_url) + '" alt="">' : '<div class="av"></div>') + '</td>'
+        + '<td><span class="pseudo">' + esc(m.username || '—') + '</span>' + (m.city ? '<br><span class="muted">' + esc(m.city) + '</span>' : '')
+        + (m.bio ? '<br><span class="muted">' + esc(m.bio.slice(0, 80)) + '</span>' : '') + '</td>'
+        + '<td>' + esc(m.email) + '</td><td>' + day(m.created_at) + '</td><td>' + ago(m.last_sign_in_at) + '</td>'
+        + '<td>' + m.posts + '</td><td>' + m.followers + ' / ' + m.following + '</td><td>' + m.nights + '</td>'
+        + '<td>' + state + '</td><td><div class="acts">' + acts.join('') + '</div></td></tr>';
+    }).join('');
+    if (more) $('mt').insertAdjacentHTML('beforeend', html);
+    else $('mt').innerHTML = head + (html || '<tr><td colspan="10" class="muted">Aucun membre trouvé.</td></tr>');
+    $('mmore').classList.toggle('hidden', rows.length < 50);
+  }
+  $('mt').onclick = function (ev) {
+    var b = ev.target.closest('button'); if (!b) return;
+    var tr = b.closest('tr'), id = tr.dataset.id, name = tr.dataset.name, reload = function () { members(false); overview(); };
+    var a = b.dataset.a;
+    if (a === 'suspend') act('Suspendre ' + name + ' ? Son compte est masqué pour tous jusqu\'à ce que tu le réactives.', 'admin_suspend_member', { member: id }, reload);
+    if (a === 'clear') act('Réactiver ' + name + ' ?', 'admin_clear_member', { member: id }, reload);
+    if (a === 'ban') act('Bannir ' + name + ' ? Il ne pourra plus se connecter ni se réinscrire avec cet e-mail.', 'admin_ban_member', { member: id }, reload);
+    if (a === 'unban') act('Débannir ' + name + ' ? Il pourra de nouveau se connecter.', 'admin_unban_member', { member: id }, reload);
+    if (a === 'photo') act('Retirer la photo de profil de ' + name + ' ?', 'admin_clear_avatar', { member: id }, reload);
+  };
+
+  // ---------- Pros ----------
+  async function pros() {
+    var rows = await rpc('admin_pros', { q: $('pq').value, filter: $('pf').value });
+    var head = '<tr><th>Page</th><th>Compte</th><th>Type</th><th>Statut</th><th>Offre</th><th>Jusqu\'au</th><th>Soirées</th><th>Stripe</th><th></th></tr>';
+    $('pt').innerHTML = head + (rows.map(function (p) {
+      var active = p.plan !== 'none' && p.plan_until && new Date(p.plan_until) > new Date();
+      var status = p.status === 'approved' ? tag('Validé', 'ok') : p.status === 'rejected' ? tag('Refusé', 'bad') : tag('En attente', 'warn');
+      var offer = active ? (p.plan_source === 'stripe' ? tag(OFFERS[p.plan_offer] || 'Payant', 'ok') : tag('Offerte (' + (p.plan_source || 'admin') + ')', 'vio')) : tag('Aucune');
+      var stripe = p.stripe_customer_id ? '<a target="_blank" rel="noopener" href="https://dashboard.stripe.com/' + (STRIPE_TEST ? 'test/' : '') + 'customers/' + encodeURIComponent(p.stripe_customer_id) + '">Client</a>' : '—';
+      var kinds = '<select data-a="kind" class="small">' + Object.keys(KINDS).map(function (k) { return '<option value="' + k + '"' + (k === p.kind ? ' selected' : '') + '>' + KINDS[k] + '</option>'; }).join('') + '</select>';
+      var acts = [];
+      if (p.status !== 'approved') acts.push('<button class="small" data-a="approve">Valider</button>');
+      if (p.status !== 'rejected') acts.push('<button class="danger small" data-a="reject">Refuser</button>');
+      acts.push('<button class="ghost small" data-a="gift">Offrir 1 mois</button>');
+      if (active) acts.push('<button class="danger small" data-a="cut">Couper l\'offre</button>');
+      return '<tr data-id="' + esc(p.user_id) + '" data-name="' + esc(p.display_name) + '" data-stripe="' + (p.plan_source === 'stripe' && active ? 1 : 0) + '">'
+        + '<td><span class="pseudo">' + esc(p.display_name) + '</span><br><span class="muted">demandé le ' + day(p.created_at) + (p.verified_via ? ' · vérifié par ' + esc(p.verified_via) : '') + '</span>'
+        + (p.review_reason ? '<br><span class="muted">' + esc(p.review_reason) + '</span>' : '') + '</td>'
+        + '<td>' + esc(p.username || '') + '<br><span class="muted">' + esc(p.email) + '</span></td>'
+        + '<td>' + kinds + '</td><td>' + status + '</td><td>' + offer + '</td><td>' + (active ? day(p.plan_until) : '—') + '</td>'
+        + '<td>' + p.nights_upcoming + (p.boosted_upcoming ? ' (' + p.boosted_upcoming + ' en avant)' : '') + '</td>'
+        + '<td>' + stripe + '</td><td><div class="acts">' + acts.join('') + '</div></td></tr>';
+    }).join('') || '<tr><td colspan="9" class="muted">Aucun compte pro trouvé.</td></tr>');
+  }
+  $('pt').onchange = function (ev) {
+    var s = ev.target; if (s.dataset.a !== 'kind') return;
+    var tr = s.closest('tr');
+    act('Passer ' + tr.dataset.name + ' en ' + KINDS[s.value] + ' ?', 'admin_set_pro_kind', { p_user: tr.dataset.id, p_kind: s.value }, function () { overview(); })
+      .then(function () { pros(); });
+  };
+  $('pt').onclick = function (ev) {
+    var b = ev.target.closest('button'); if (!b) return;
+    var tr = b.closest('tr'), id = tr.dataset.id, name = tr.dataset.name, reload = function () { pros(); overview(); };
+    var a = b.dataset.a;
+    if (a === 'approve') act('Valider le compte pro ' + name + ' ?', 'admin_set_pro_status', { p_user: id, p_status: 'approved' }, reload);
+    if (a === 'reject') act('Refuser le compte pro ' + name + ' ?', 'admin_set_pro_status', { p_user: id, p_status: 'rejected', p_reason: 'Refusé par un admin' }, reload);
+    if (a === 'gift') act('Offrir 1 mois de mise en avant à ' + name + ' ?', 'admin_set_pro_plan', { p_user: id, p_plan: 'promo', p_months: 1, p_source: 'cadeau' }, reload);
+    if (a === 'cut') act('Couper l\'offre de ' + name + ' maintenant ?' + (tr.dataset.stripe === '1' ? ' Attention : son abonnement Stripe continue d\'être prélevé, résilie-le aussi dans Stripe (lien Client).' : ''),
+      'admin_set_pro_plan', { p_user: id, p_plan: 'none', p_months: 0, p_source: 'admin' }, reload);
+  };
+
+  // ---------- Nights ----------
+  async function events() {
+    var rows = await rpc('admin_events', { q: $('eq').value, filter: $('ef').value, lim: 150 });
+    var head = '<tr><th>Date</th><th>Soirée</th><th>Lieu</th><th>Source</th><th>Genre</th><th>État</th><th></th></tr>';
+    $('et').innerHTML = head + (rows.map(function (e) {
+      var off = e.status === 'removed' || !e.electronic;
+      var genres = '<select data-a="genre" class="small">' + GENRES.map(function (g) { return '<option' + (g === e.genre ? ' selected' : '') + '>' + g + '</option>'; }).join('')
+        + (GENRES.indexOf(e.genre) < 0 ? '<option selected>' + esc(e.genre || '—') + '</option>' : '') + '</select>';
+      var state = (off ? tag(e.admin_removed ? 'Retirée par admin' : 'Hors carte', 'bad') : tag('Sur la carte', 'ok')) + (e.boosted ? tag('En avant', 'vio') : '');
+      return '<tr data-id="' + esc(e.id) + '" data-name="' + esc(e.name) + '">'
+        + '<td style="white-space:nowrap">' + day(e.starts_on) + '</td>'
+        + '<td><span style="color:#fff;font-weight:700">' + esc(e.name) + '</span>' + (e.dj_name ? '<br><span class="muted">' + esc(e.dj_name) + '</span>' : '')
+        + (e.url ? '<br><a target="_blank" rel="noopener" href="' + esc(e.url) + '">Page</a>' : '')
+        + (e.tags && e.tags.length ? '<br>' + e.tags.slice(0, 6).map(function (t) { return tag(t); }).join('') : '') + '</td>'
+        + '<td>' + esc(e.venue || '') + '<br><span class="muted">' + esc(e.city || '') + (e.country_code ? ' · ' + esc(e.country_code) : '') + '</span></td>'
+        + '<td>' + esc(e.source || '') + '</td><td>' + genres + '</td><td>' + state + '</td>'
+        + '<td><div class="acts">' + (off ? '<button class="ghost small" data-a="restore">Remettre</button>' : '<button class="danger small" data-a="remove">Retirer</button>') + '</div></td></tr>';
+    }).join('') || '<tr><td colspan="7" class="muted">Aucune soirée trouvée.</td></tr>');
+  }
+  $('et').onchange = function (ev) {
+    var s = ev.target; if (s.dataset.a !== 'genre') return;
+    var tr = s.closest('tr');
+    act(null, 'admin_set_event_genre', { p_id: tr.dataset.id, p_genre: s.value }, function () {});
+  };
+  $('et').onclick = function (ev) {
+    var b = ev.target.closest('button'); if (!b) return;
+    var tr = b.closest('tr');
+    if (b.dataset.a === 'remove') act('Retirer « ' + tr.dataset.name + ' » de la carte ? Elle restera retirée même si les imports la revoient.', 'admin_remove_event', { p_id: tr.dataset.id, p_removed: true }, function () { events(); overview(); });
+    if (b.dataset.a === 'restore') act('Remettre « ' + tr.dataset.name + ' » sur la carte ?', 'admin_remove_event', { p_id: tr.dataset.id, p_removed: false }, function () { events(); overview(); });
+  };
+
+  // ---------- Navigation ----------
+  var loaded = {};
+  function openTab(t) {
+    Array.prototype.forEach.call(document.querySelectorAll('#tabs button'), function (b) { b.classList.toggle('on', b.dataset.tab === t); });
+    ['overview', 'members', 'pros', 'events'].forEach(function (x) { $('tab-' + x).classList.toggle('hidden', x !== t); });
+    if (!loaded[t]) { loaded[t] = true; ({ overview: overview, members: function () { members(false); }, pros: pros, events: events })[t](); }
+  }
+  $('tabs').onclick = function (ev) { var b = ev.target.closest('button'); if (b) openTab(b.dataset.tab); };
+  $('mgo').onclick = function () { members(false); };
+  $('mmore').onclick = function () { members(true); };
+  $('pgo').onclick = pros;
+  $('ego').onclick = events;
+  [['mq', 'mgo'], ['pq', 'pgo'], ['eq', 'ego']].forEach(function (p) { $(p[0]).onkeydown = function (e) { if (e.key === 'Enter') $(p[1]).click(); }; });
+  $('mf').onchange = function () { members(false); };
+  $('pf').onchange = pros;
+  $('ef').onchange = events;
+  $('refresh').onclick = function () { loaded = {}; var on = document.querySelector('#tabs button.on').dataset.tab; openTab(on); if (on !== 'overview') overview(); };
+
+  async function show() {
+    var s = (await sb.auth.getSession()).data.session;
+    $('login').classList.toggle('hidden', !!s);
+    $('app').classList.toggle('hidden', !s);
+    if (!s) return;
+    $('who').textContent = s.user.email;
+    loaded = {};
+    openTab('overview');
+  }
+  $('signin').onclick = async function () {
+    $('loginMsg').textContent = '';
+    var r = await sb.auth.signInWithPassword({ email: $('email').value.trim(), password: $('password').value });
+    if (r.error) { $('loginMsg').textContent = 'E-mail ou mot de passe incorrect.'; return; }
+    show();
+  };
+  $('password').onkeydown = function (e) { if (e.key === 'Enter') $('signin').click(); };
+  $('signout').onclick = async function () { await sb.auth.signOut(); show(); };
+  show();
+})();
+</script>
+
+<nav>
+  <a href="/cgu.html">Conditions d'utilisation</a>
+  <a href="/confidentialite.html">Confidentialité</a>
+  <a href="/suppression-compte.html">Supprimer mon compte</a>
+  <a href="mailto:contact@vibesnight.app">contact@vibesnight.app</a>
+</nav>
+</main>
+</body>
+</html>
