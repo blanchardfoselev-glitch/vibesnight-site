@@ -358,7 +358,7 @@
     playingBtn = b; b.textContent = '…';
     var found = await findExcerpt(b.dataset.q, b.dataset.artist === '1');
     if (playingBtn !== b) return;
-    if (!found) { b.textContent = '▶ Extrait'; playingBtn = null; info.textContent = 'Pas d'extrait trouvé'; return; }
+    if (!found) { b.textContent = '▶ Extrait'; playingBtn = null; info.textContent = "Pas d'extrait trouvé"; return; }
     info.textContent = found.label;
     player.src = found.url; player.play(); b.textContent = '■ Stop';
     player.onended = function () { if (playingBtn === b) { b.textContent = '▶ Extrait'; playingBtn = null; } };
@@ -380,7 +380,7 @@
         + (function () {
             var artist = e.dj_name || (e.lineup && e.lineup[0]) || '';
             // Without an artist, a search on the night's name finds unrelated songs: no button, the Page link instead.
-            if (!artist) return '<div class="muted" style="font-size:12px;margin-top:6px">Pas d'artiste indiqué : ouvre la Page pour écouter</div>';
+            if (!artist) return '<div class="muted" style="font-size:12px;margin-top:6px">Pas d&#39;artiste indiqué : ouvre la Page pour écouter</div>';
             return '<div style="margin-top:6px"><button class="ghost small" data-a="listen" data-artist="1" data-q="' + esc(artist) + '">▶ Extrait</button>'
               + (e.lineup && e.lineup.length > 1 ? ' <span class="muted">' + esc(e.lineup.slice(0, 5).join(', ')) + '</span>' : '')
               + '<div class="excerpt muted" style="font-size:12px;margin-top:3px"></div></div>';
