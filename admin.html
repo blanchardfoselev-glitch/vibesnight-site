@@ -174,18 +174,27 @@
   async function overview() {
     var o = await rpc('admin_overview');
     if (!o) { say("Ce compte n'est pas admin."); return; }
-    var pros = o.pros || {};
+    // Registered pros by type (19/11/2026): validated, and how many wait for a check.
+    var list = (await rpc('admin_pros', { q: '', filter: 'all' })) || [];
+    var reg = function (kind) {
+      var ok = 0, wait = 0;
+      list.forEach(function (r) { if (r.kind === kind) { if (r.status === 'approved') ok++; else if (r.status === 'pending') wait++; } });
+      return [ok, wait ? '+' + wait + ' en attente' : ''];
+    };
+    var dj = reg('dj'), club = reg('club'), org = reg('organizer'), bar = reg('bar');
     var cards = [
+      ['DJs pro inscrits', dj[0], false, dj[1]], ['Clubs inscrits', club[0], false, club[1]],
+      ['Festivals / marques inscrits', org[0], false, org[1]], ['Bars inscrits', bar[0], false, bar[1]],
       ['Membres', o.members], ['Nouveaux aujourd\'hui', o.new_today], ['Nouveaux (7 j)', o.new_7d], ['Actifs (30 j)', o.active_30d],
       ['Revenu mensuel', (o.mrr_cents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })],
       ['Pros payants', o.paying], ['Offres offertes', o.gifted], ['Demandes pro en attente', o.pros_pending, o.pros_pending > 0],
-      ['Clubs', pros.club || 0], ['Bars', pros.bar || 0], ['DJs', pros.dj || 0], ['Festivals / marques', pros.organizer || 0],
       ['Soirées sur la carte', o.nights_on_map], ['Soirées (7 j)', o.nights_7d], ['Posts (7 j)', o.posts_7d], ['Soirées certifiées (7 j)', o.checkins_7d],
       ['Signalements ouverts', o.reports_open, o.reports_open > 0], ['Comptes suspects', o.flags_open, o.flags_open > 0],
       ['Plantages (24 h)', o.crashes_24h, o.crashes_24h > 0], ['Suspendus', o.suspended], ['Bannis', o.banned],
     ];
     $('stats').innerHTML = cards.map(function (c) {
-      return '<div class="stat' + (c[2] ? ' alert' : '') + '"><b>' + esc(c[1]) + '</b><span>' + esc(c[0]) + '</span></div>';
+      return '<div class="stat' + (c[2] ? ' alert' : '') + '"><b>' + esc(c[1]) + '</b><span>' + esc(c[0]) + '</span>'
+        + (c[3] ? '<span style="color:#ffab40">' + esc(c[3]) + '</span>' : '') + '</div>';
     }).join('');
   }
 
