@@ -327,6 +327,43 @@
   };
 
   // ---------- Nights ----------
+  // Music excerpt (19/11/2026): to classify a night quickly, play 30 s of its artist (the artist field, or the first
+  // name of the line-up). Apple Music first, Deezer otherwise; both answer in JSONP from a web page.
+  var player = new Audio(), playingBtn = null;
+  function jsonp(url) {
+    return new Promise(function (ok) {
+      var cb = 'cb' + Math.random().toString(36).slice(2), el = document.createElement('script');
+      var done = function (d) { delete window[cb]; el.remove(); ok(d); };
+      window[cb] = done; el.onerror = function () { done(null); };
+      el.src = url + (url.indexOf('?') < 0 ? '?' : '&') + 'callback=' + cb; document.body.appendChild(el);
+      setTimeout(function () { if (window[cb]) done(null); }, 8000);
+    });
+  }
+  function plain(t) { return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+  async function findExcerpt(q, isArtist) {
+    var it = await jsonp('https://itunes.apple.com/search?entity=song&limit=15&country=FR&term=' + encodeURIComponent(q));
+    var songs = ((it && it.results) || []).filter(function (r) { return r.previewUrl; });
+    var match = isArtist ? songs.filter(function (r) { return plain(r.artistName).indexOf(plain(q)) >= 0 || plain(q).indexOf(plain(r.artistName)) >= 0; }) : songs;
+    if (match.length) return { url: match[0].previewUrl, label: match[0].artistName + ' — ' + match[0].trackName };
+    var dz = await jsonp('https://api.deezer.com/search?output=jsonp&limit=15&q=' + encodeURIComponent(q));
+    var tracks = ((dz && dz.data) || []).filter(function (r) { return r.preview; });
+    var dm = isArtist ? tracks.filter(function (r) { return r.artist && plain(r.artist.name) === plain(q); }) : tracks;
+    var pick = dm[0] || (isArtist ? null : tracks[0]);
+    return pick ? { url: pick.preview, label: pick.artist.name + ' — ' + pick.title } : null;
+  }
+  async function playExcerpt(b) {
+    var info = b.parentNode.querySelector('.excerpt');
+    if (playingBtn === b) { player.pause(); b.textContent = '▶ Extrait'; playingBtn = null; return; }
+    if (playingBtn) { player.pause(); playingBtn.textContent = '▶ Extrait'; }
+    playingBtn = b; b.textContent = '…';
+    var found = await findExcerpt(b.dataset.q, b.dataset.artist === '1');
+    if (playingBtn !== b) return;
+    if (!found) { b.textContent = '▶ Extrait'; playingBtn = null; info.textContent = 'Pas d'extrait trouvé'; return; }
+    info.textContent = found.label;
+    player.src = found.url; player.play(); b.textContent = '■ Stop';
+    player.onended = function () { if (playingBtn === b) { b.textContent = '▶ Extrait'; playingBtn = null; } };
+  }
+
   async function events() {
     var rows = await rpc('admin_events', { q: $('eq').value, filter: $('ef').value, lim: 150 });
     var head = '<tr><th>Date</th><th>Soirée</th><th>Lieu</th><th>Source</th><th>Genre</th><th>État</th><th></th></tr>';
@@ -339,7 +376,15 @@
         + '<td style="white-space:nowrap">' + day(e.starts_on) + '</td>'
         + '<td><span style="color:#fff;font-weight:700">' + esc(e.name) + '</span>' + (e.dj_name ? '<br><span class="muted">' + esc(e.dj_name) + '</span>' : '')
         + (e.url ? '<br><a target="_blank" rel="noopener" href="' + esc(e.url) + '">Page</a>' : '')
-        + (e.tags && e.tags.length ? '<br>' + e.tags.slice(0, 6).map(function (t) { return tag(t); }).join('') : '') + '</td>'
+        + (e.tags && e.tags.length ? '<br>' + e.tags.slice(0, 6).map(function (t) { return tag(t); }).join('') : '')
+        + (function () {
+            var artist = e.dj_name || (e.lineup && e.lineup[0]) || '';
+            // Without an artist, a search on the night's name finds unrelated songs: no button, the Page link instead.
+            if (!artist) return '<div class="muted" style="font-size:12px;margin-top:6px">Pas d'artiste indiqué : ouvre la Page pour écouter</div>';
+            return '<div style="margin-top:6px"><button class="ghost small" data-a="listen" data-artist="1" data-q="' + esc(artist) + '">▶ Extrait</button>'
+              + (e.lineup && e.lineup.length > 1 ? ' <span class="muted">' + esc(e.lineup.slice(0, 5).join(', ')) + '</span>' : '')
+              + '<div class="excerpt muted" style="font-size:12px;margin-top:3px"></div></div>';
+          })() + '</td>'
         + '<td>' + esc(e.venue || '') + '<br><span class="muted">' + esc(e.city || '') + (e.country_code ? ' · ' + esc(e.country_code) : '') + '</span></td>'
         + '<td>' + esc(e.source || '') + '</td><td>' + genres + '</td><td>' + state + '</td>'
         + '<td><div class="acts">' + ($('ef').value === 'doubt' ? '<button class="ghost small" data-a="ok" title="Le style est bon : la soirée sort de la liste">OK</button>' : '') + (off ? '<button class="ghost small" data-a="restore">Remettre</button>' : '<button class="danger small" data-a="remove">Retirer</button>') + '</div></td></tr>';
@@ -353,6 +398,7 @@
   $('et').onclick = function (ev) {
     var b = ev.target.closest('button'); if (!b) return;
     var tr = b.closest('tr');
+    if (b.dataset.a === 'listen') { playExcerpt(b); return; }
     if (b.dataset.a === 'ok') act(null, 'admin_set_event_genre', { p_id: tr.dataset.id, p_genre: tr.querySelector('select').value }, function () { tr.remove(); });
     if (b.dataset.a === 'remove') act('Retirer « ' + tr.dataset.name + ' » de la carte ? Elle restera retirée même si les imports la revoient.', 'admin_remove_event', { p_id: tr.dataset.id, p_removed: true }, function () { events(); overview(); });
     if (b.dataset.a === 'restore') act('Remettre « ' + tr.dataset.name + ' » sur la carte ?', 'admin_remove_event', { p_id: tr.dataset.id, p_removed: false }, function () { events(); overview(); });
