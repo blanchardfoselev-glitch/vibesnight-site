@@ -126,7 +126,7 @@
   <section id="tab-events" class="hidden">
     <div class="bar">
       <input id="eq" placeholder="Soirée, club, ville ou DJ">
-      <select id="ef"><option value="upcoming">À venir sur la carte</option><option value="boosted">Mises en avant</option><option value="removed">Retirées de la carte</option></select>
+      <select id="ef"><option value="upcoming">À venir sur la carte</option><option value="boosted">Mises en avant</option><option value="removed">Retirées de la carte</option><option value="doubt">Styles à vérifier</option></select>
       <button id="ego">Chercher</button>
     </div>
     <div class="scroll"><table id="et"></table></div>
@@ -342,17 +342,18 @@
         + (e.tags && e.tags.length ? '<br>' + e.tags.slice(0, 6).map(function (t) { return tag(t); }).join('') : '') + '</td>'
         + '<td>' + esc(e.venue || '') + '<br><span class="muted">' + esc(e.city || '') + (e.country_code ? ' · ' + esc(e.country_code) : '') + '</span></td>'
         + '<td>' + esc(e.source || '') + '</td><td>' + genres + '</td><td>' + state + '</td>'
-        + '<td><div class="acts">' + (off ? '<button class="ghost small" data-a="restore">Remettre</button>' : '<button class="danger small" data-a="remove">Retirer</button>') + '</div></td></tr>';
+        + '<td><div class="acts">' + ($('ef').value === 'doubt' ? '<button class="ghost small" data-a="ok" title="Le style est bon : la soirée sort de la liste">OK</button>' : '') + (off ? '<button class="ghost small" data-a="restore">Remettre</button>' : '<button class="danger small" data-a="remove">Retirer</button>') + '</div></td></tr>';
     }).join('') || '<tr><td colspan="7" class="muted">Aucune soirée trouvée.</td></tr>');
   }
   $('et').onchange = function (ev) {
     var s = ev.target; if (s.dataset.a !== 'genre') return;
     var tr = s.closest('tr');
-    act(null, 'admin_set_event_genre', { p_id: tr.dataset.id, p_genre: s.value }, function () {});
+    act(null, 'admin_set_event_genre', { p_id: tr.dataset.id, p_genre: s.value }, function () { if ($('ef').value === 'doubt') tr.remove(); });
   };
   $('et').onclick = function (ev) {
     var b = ev.target.closest('button'); if (!b) return;
     var tr = b.closest('tr');
+    if (b.dataset.a === 'ok') act(null, 'admin_set_event_genre', { p_id: tr.dataset.id, p_genre: tr.querySelector('select').value }, function () { tr.remove(); });
     if (b.dataset.a === 'remove') act('Retirer « ' + tr.dataset.name + ' » de la carte ? Elle restera retirée même si les imports la revoient.', 'admin_remove_event', { p_id: tr.dataset.id, p_removed: true }, function () { events(); overview(); });
     if (b.dataset.a === 'restore') act('Remettre « ' + tr.dataset.name + ' » sur la carte ?', 'admin_remove_event', { p_id: tr.dataset.id, p_removed: false }, function () { events(); overview(); });
   };
