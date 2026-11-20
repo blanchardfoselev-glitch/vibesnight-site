@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tester VIBES · VIBES</title>
+<link rel="icon" href="/icon.png">
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #010105; color: #ccc; font: 15px/1.6 -apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  header img { width: 44px; height: 44px; border-radius: 10px; }
+  header a { color: #fff; font-weight: 800; font-size: 20px; letter-spacing: 3px; text-decoration: none; }
+  h1 { color: #fff; font-size: 26px; margin: 0 0 4px; }
+  h2 { color: #b388ff; font-size: 16px; margin: 28px 0 8px; }
+  a { color: #00e5ff; }
+  .muted { color: #666; font-size: 13px; }
+  nav { margin-top: 40px; padding-top: 16px; border-top: 1px solid #1a1a3e; display: flex; flex-wrap: wrap; gap: 16px; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+<header><img src="/icon.png" alt=""><a href="/">VIBES</a></header>
+<!-- Tester page (20/11/2026): one link for every tester. Links opened inside Instagram, Facebook, Messenger, TikTok or
+     Snapchat open in their own browser, which is not signed in to Google: Google Groups shows "Contenu indisponible"
+     and the Play testing page stays blank. On Android this page sends the tester to Chrome first. -->
+<style>
+  .btn { display: block; text-align: center; background: #b388ff; color: #08081a !important; font-weight: 800; text-decoration: none;
+         border-radius: 12px; padding: 14px 16px; margin: 10px 0; font-size: 16px; }
+  .btn.alt { background: transparent; color: #b388ff !important; border: 1px solid #b388ff; }
+  .step { background: #0d0d20; border: 1px solid #1a1a3e; border-radius: 14px; padding: 14px 16px; margin: 12px 0; }
+  .step b { color: #fff; }
+  .warn { background: #2a1030; border: 1px solid #b388ff; border-radius: 14px; padding: 14px 16px; margin: 12px 0; color: #fff; }
+  .hide { display: none; }
+</style>
+
+<h1>Tester VIBES</h1>
+<p>Merci de tester VIBES, l'appli qui réunit toutes les soirées électro autour de toi sur une carte.</p>
+
+<div id="inapp" class="warn hide">
+  <b>Tu es dans le navigateur d'Instagram (ou d'une autre appli).</b><br>
+  Google ne fonctionne pas ici. Touche le bouton pour continuer dans Chrome :
+  <a id="toChrome" class="btn" href="#">Ouvrir dans Chrome</a>
+  <span class="muted">Si rien ne se passe : touche les ⋮ en haut à droite, puis « Ouvrir dans Chrome » ou « Ouvrir dans le navigateur ».</span>
+</div>
+
+<div id="choose">
+  <a class="btn" href="#android" onclick="show('android')">J'ai un Android</a>
+  <a class="btn alt" href="#iphone" onclick="show('iphone')">J'ai un iPhone</a>
+</div>
+
+<section id="android" class="hide">
+  <h2>Sur Android</h2>
+  <p>Fais ces 3 étapes <b>dans Chrome</b>, connecté avec <b>le même compte Gmail que ton Play Store</b> (en haut à droite de Chrome, ta photo ou ta lettre).</p>
+  <div class="step"><b>1. Rejoins le groupe des testeurs</b><br>Touche « Rejoindre le groupe ».
+    <a class="btn" href="https://groups.google.com/g/test-vibes-android">Rejoindre le groupe</a>
+    <span class="muted">« Contenu indisponible » ? Tu n'es pas connecté à Google dans ce navigateur, ou avec un autre compte : touche « changer de compte » sur la page Google.</span></div>
+  <div class="step"><b>2. Deviens testeur</b><br>Touche « Devenir testeur ».
+    <a class="btn" href="https://play.google.com/apps/testing/com.vibesnight.app">Devenir testeur</a></div>
+  <div class="step"><b>3. Installe VIBES</b>
+    <a class="btn" href="https://play.google.com/store/apps/details?id=com.vibesnight.app">Installer VIBES</a>
+    <span class="muted">« Introuvable » ? Attends quelques minutes après l'étape 2, puis réessaie.</span></div>
+  <p><b>Important :</b> garde l'appli installée au moins 14 jours, sinon ton test ne compte pas pour Google.</p>
+</section>
+
+<section id="iphone" class="hide">
+  <h2>Sur iPhone</h2>
+  <div class="step"><b>1. Installe TestFlight</b> (l'appli gratuite d'Apple pour les tests)
+    <a class="btn alt" href="https://apps.apple.com/app/testflight/id899247664">TestFlight sur l'App Store</a></div>
+  <div class="step"><b>2. Ouvre l'invitation VIBES</b><br>Touche « Accepter » puis « Installer ».
+    <a class="btn" href="https://testflight.apple.com/join/mPBe5apF">Rejoindre le test VIBES</a>
+    <span class="muted">Depuis Instagram : touche ⋯ en haut à droite puis « Ouvrir dans Safari » si rien ne se passe.</span></div>
+</section>
+
+<p>Ensuite : crée ton compte (pense à confirmer ton adresse e-mail), ajoute une photo, explore la carte, mets tes DJs et clubs en favoris. Dis-nous tout ce qui bug ou manque !</p>
+
+<script>
+  function show(id) {
+    document.getElementById('android').classList.toggle('hide', id !== 'android');
+    document.getElementById('iphone').classList.toggle('hide', id !== 'iphone');
+  }
+  var ua = navigator.userAgent || '';
+  var android = /Android/i.test(ua), ios = /iPhone|iPad|iPod/i.test(ua);
+  // Browsers built into social apps: Instagram, Facebook, Messenger, TikTok, Snapchat, LinkedIn, Twitter/X, Line.
+  var inApp = /Instagram|FBAN|FBAV|FB_IAB|Messenger|musical_ly|TikTok|Bytedance|Snapchat|LinkedInApp|Twitter|Line\//i.test(ua);
+  if (android) show('android'); else if (ios) show('iphone');
+  if (android && inApp) {
+    var url = location.href.replace(/^https?:\/\//, '');
+    var intent = 'intent://' + url + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(location.href) + ';end';
+    document.getElementById('inapp').classList.remove('hide');
+    document.getElementById('toChrome').href = intent;
+    setTimeout(function () { location.href = intent; }, 400);
+  } else if (ios && inApp) {
+    document.getElementById('inapp').classList.remove('hide');
+    document.getElementById('inapp').innerHTML = '<b>Tu es dans le navigateur d’Instagram (ou d’une autre appli).</b><br>Pour le lien TestFlight, touche ⋯ en haut à droite puis « Ouvrir dans Safari » (ou « Ouvrir dans le navigateur »).';
+  }
+</script>
+
+<nav>
+  <a href="/cgu.html">Conditions d'utilisation</a>
+  <a href="/confidentialite.html">Confidentialité</a>
+  <a href="/suppression-compte.html">Supprimer mon compte</a>
+  <a href="mailto:contact@vibesnight.app">contact@vibesnight.app</a>
+</nav>
+</main>
+</body>
+</html>
